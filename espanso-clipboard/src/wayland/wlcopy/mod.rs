@@ -119,7 +119,13 @@ impl Clipboard for WlCopyClipboard {
     }
 
     fn set_text(&self, text: &str, _: &ClipboardOperationOptions) -> anyhow::Result<()> {
-        self.invoke_command_with_timeout(&mut Command::new("wl-copy"), text.as_bytes(), "wl-copy")
+        // NOTE: Without explicit MIME type, wl-copy's auto-detection can give unexpected results
+        // making the text not paste-able in some programs.
+        self.invoke_command_with_timeout(
+            Command::new("wl-copy").arg("--type").arg("text/plain;charset=utf-8"),
+            text.as_bytes(),
+            "wl-copy",
+        )
     }
 
     fn set_image(
@@ -128,9 +134,7 @@ impl Clipboard for WlCopyClipboard {
         _: &ClipboardOperationOptions,
     ) -> anyhow::Result<()> {
         if !image_path.exists() || !image_path.is_file() {
-            return Err(
-                WlCopyClipboardError::ImageNotFound(image_path.to_path_buf()).into(),
-            );
+            return Err(WlCopyClipboardError::ImageNotFound(image_path.to_path_buf()).into());
         }
 
         // Load the image data
@@ -179,25 +183,25 @@ impl WlCopyClipboard {
                                 Ok(())
                             } else {
                                 error!("error, {} exited with non-zero exit code", name);
-                                Err(WaylandFallbackClipboardError::SetOperationFailed().into())
+                                Err(WlCopyClipboardError::SetOperationFailed().into())
                             }
                         } else {
                             error!("error, {} has timed-out, killing the process", name);
                             if child.kill().is_err() {
                                 error!("unable to kill {}", name);
                             }
-                            Err(WaylandFallbackClipboardError::SetOperationFailed().into())
+                            Err(WlCopyClipboardError::SetOperationFailed().into())
                         }
                     }
                     Err(err) => {
                         error!("error while executing '{}': {}", name, err);
-                        Err(WaylandFallbackClipboardError::SetOperationFailed().into())
+                        Err(WlCopyClipboardError::SetOperationFailed().into())
                     }
                 }
             }
             Err(err) => {
                 error!("could not invoke '{}': {}", name, err);
-                Err(WaylandFallbackClipboardError::SetOperationFailed().into())
+                Err(WlCopyClipboardError::SetOperationFailed().into())
             }
         }
     }

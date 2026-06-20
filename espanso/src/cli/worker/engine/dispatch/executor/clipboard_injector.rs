@@ -19,7 +19,7 @@
 
 use std::{convert::TryInto, path::PathBuf};
 
-use espanso_clipboard::{Clipboard, ClipboardOperationOptions};
+use espanso_clipboard::{Clipboard, ClipboardOperationOptions, ClipboardSnapshot};
 use espanso_inject::{keys::Key, InjectionOptions, Injector};
 use log::error;
 
@@ -180,7 +180,7 @@ impl ImageInjector for ClipboardInjectorAdapter<'_> {
 
 struct ClipboardRestoreGuard<'a> {
     clipboard: &'a dyn Clipboard,
-    content: Option<String>,
+    snapshot: Option<ClipboardSnapshot>,
     restore_delay: u64,
     clipboard_operation_options: ClipboardOperationOptions,
 }
@@ -191,11 +191,16 @@ impl<'a> ClipboardRestoreGuard<'a> {
         restore_delay: u64,
         clipboard_operation_options: ClipboardOperationOptions,
     ) -> Self {
-        let clipboard_content = clipboard.get_text(&clipboard_operation_options);
-
+        let snapshot = match clipboard.save_snapshot(&clipboard_operation_options) {
+            Ok(snapshot) => snapshot,
+            Err(err) => {
+                error!("Failed to save clipboard snapshot: {err}");
+                None
+            }
+        };
         Self {
             clipboard,
-            content: clipboard_content,
+            snapshot,
             restore_delay,
             clipboard_operation_options,
         }
@@ -204,14 +209,14 @@ impl<'a> ClipboardRestoreGuard<'a> {
 
 impl Drop for ClipboardRestoreGuard<'_> {
     fn drop(&mut self) {
-        if let Some(content) = self.content.take() {
+        if let Some(snapshot) = self.snapshot.take() {
             // Sometimes an expansion gets overwritten before pasting by the previous content
             // A delay is needed to mitigate the problem
             std::thread::sleep(std::time::Duration::from_millis(self.restore_delay));
 
             if let Err(error) = self
                 .clipboard
-                .set_text(&content, &self.clipboard_operation_options)
+                .restore_snapshot(&snapshot, &self.clipboard_operation_options)
             {
                 error!("unable to restore clipboard content after expansion: {error}");
             }

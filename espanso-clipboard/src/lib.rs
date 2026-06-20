@@ -20,7 +20,7 @@
 use std::path::Path;
 
 use anyhow::Result;
-use log::info;
+use log::{error, info};
 
 #[cfg(target_os = "windows")]
 mod win32;
@@ -36,16 +36,69 @@ mod wayland;
 #[cfg(target_os = "macos")]
 mod cocoa;
 
+/// A single MIME-typed entry in a full clipboard snapshot.
+pub struct MimeEntry {
+    /// The MIME type string (e.g. `"text/plain;charset=utf-8"`, `"image/png"`).
+    pub mime: String,
+    /// Raw bytes for this MIME type as provided by the clipboard owner.
+    pub payload: Vec<u8>,
+}
+
+/// A point-in-time snapshot of the clipboard, used for save/restore around clipboard injection.
+pub enum ClipboardSnapshot {
+    /// Full multi-MIME snapshot. Empty vec means the clipboard was empty.
+    MultiMime(Vec<MimeEntry>),
+    /// Text-only snapshot. `None` means the clipboard was empty or non-text.
+    TextOnly(String),
+}
+
+/// Operations on the system clipboard.
 pub trait Clipboard {
+    /// Read the current clipboard text, or `None` if empty / non-text.
     fn get_text(&self, options: &ClipboardOperationOptions) -> Option<String>;
+
+    /// Set the clipboard to the given plain text.
     fn set_text(&self, text: &str, options: &ClipboardOperationOptions) -> Result<()>;
+
+    /// Set the clipboard to the image at `image_path` (PNG).
     fn set_image(&self, image_path: &Path, options: &ClipboardOperationOptions) -> Result<()>;
+
+    /// Set the clipboard to HTML content with an optional plain-text fallback.
     fn set_html(
         &self,
         html: &str,
         fallback_text: Option<&str>,
         options: &ClipboardOperationOptions,
     ) -> Result<()>;
+
+    /// Capture the current clipboard state into a [`ClipboardSnapshot`].
+    fn save_snapshot(&self, options: &ClipboardOperationOptions) -> Result<Option<ClipboardSnapshot>> {
+        // Defaults to basic text-only snapshot support
+        if let Some(text) = self.get_text(options) {
+            Ok(Some(ClipboardSnapshot::TextOnly(text)))
+        } else {
+            Ok(None) // no data from clipboard
+        }
+    }
+
+    /// Restore the clipboard to a previously captured [`ClipboardSnapshot`].
+    fn restore_snapshot(
+        &self,
+        snapshot: &ClipboardSnapshot,
+        options: &ClipboardOperationOptions,
+    ) -> Result<()> {
+        // Defaults to basic text-only snapshot support
+        match snapshot {
+            ClipboardSnapshot::TextOnly(text) => {
+                self.set_text(text, options)?;
+                Ok(())
+            }
+            ClipboardSnapshot::MultiMime(_) => {
+                error!("restore: multi-MIME restore is not supported on this platform");
+                Ok(())
+            }
+        }
+    }
 }
 
 #[allow(dead_code)]

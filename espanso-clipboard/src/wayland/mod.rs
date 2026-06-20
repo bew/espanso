@@ -25,16 +25,16 @@ use log::info;
 use crate::{Clipboard, ClipboardOperationOptions, ClipboardOptions};
 use wlcopy::WlCopyClipboard;
 
-pub(crate) struct WaylandClipboard {
+pub struct WaylandClipboard {
     wlcopy: WlCopyClipboard,
 }
 
 impl WaylandClipboard {
     pub fn new(options: ClipboardOptions) -> Result<Self> {
         info!("using WlCopyClipboard backend");
-        Ok(Self {
-            wlcopy: WlCopyClipboard::new(options)?,
-        })
+        let wlcopy = WlCopyClipboard::new(options)?;
+
+        Ok(Self { wlcopy })
     }
 }
 
