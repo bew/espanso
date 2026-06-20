@@ -17,4 +17,50 @@
  * along with espanso.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-pub(crate) mod fallback;
+pub(crate) mod wlcopy;
+
+use anyhow::Result;
+use log::info;
+
+use crate::{Clipboard, ClipboardOperationOptions, ClipboardOptions};
+use wlcopy::WlCopyClipboard;
+
+pub(crate) struct WaylandClipboard {
+    wlcopy: WlCopyClipboard,
+}
+
+impl WaylandClipboard {
+    pub fn new(options: ClipboardOptions) -> Result<Self> {
+        info!("using WlCopyClipboard backend");
+        Ok(Self {
+            wlcopy: WlCopyClipboard::new(options)?,
+        })
+    }
+}
+
+impl Clipboard for WaylandClipboard {
+    fn get_text(&self, options: &ClipboardOperationOptions) -> Option<String> {
+        self.wlcopy.get_text(options)
+    }
+
+    fn set_text(&self, text: &str, options: &ClipboardOperationOptions) -> Result<()> {
+        self.wlcopy.set_text(text, options)
+    }
+
+    fn set_image(
+        &self,
+        image_path: &std::path::Path,
+        options: &ClipboardOperationOptions,
+    ) -> Result<()> {
+        self.wlcopy.set_image(image_path, options)
+    }
+
+    fn set_html(
+        &self,
+        html: &str,
+        fallback_text: Option<&str>,
+        options: &ClipboardOperationOptions,
+    ) -> Result<()> {
+        self.wlcopy.set_html(html, fallback_text, options)
+    }
+}

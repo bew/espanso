@@ -31,20 +31,20 @@ use std::process::Command;
 use thiserror::Error;
 use wait_timeout::ChildExt;
 
-pub(crate) struct WaylandFallbackClipboard {
+pub(crate) struct WlCopyClipboard {
     command_timeout: u64,
 }
 
-impl WaylandFallbackClipboard {
+impl WlCopyClipboard {
     pub fn new(options: ClipboardOptions) -> Result<Self> {
         // Make sure wl-paste and wl-copy are available
         if Command::new("wl-paste").arg("--version").output().is_err() {
             error!("unable to call 'wl-paste' binary, please install the wl-clipboard package.");
-            return Err(WaylandFallbackClipboardError::MissingWLClipboard().into());
+            return Err(WlCopyClipboardError::MissingWLClipboard().into());
         }
         if Command::new("wl-copy").arg("--version").output().is_err() {
             error!("unable to call 'wl-copy' binary, please install the wl-clipboard package.");
-            return Err(WaylandFallbackClipboardError::MissingWLClipboard().into());
+            return Err(WlCopyClipboardError::MissingWLClipboard().into());
         }
 
         // Try to connect to the wayland display
@@ -62,11 +62,11 @@ impl WaylandFallbackClipboard {
             error!(
                 "environment variable XDG_RUNTIME_DIR is missing, can't initialize the clipboard"
             );
-            return Err(WaylandFallbackClipboardError::MissingEnvVariable().into());
+            return Err(WlCopyClipboardError::MissingEnvVariable().into());
         };
         if UnixStream::connect(wayland_socket).is_err() {
             error!("failed to connect to Wayland display");
-            return Err(WaylandFallbackClipboardError::ConnectionFailed().into());
+            return Err(WlCopyClipboardError::ConnectionFailed().into());
         }
 
         Ok(Self {
@@ -75,7 +75,7 @@ impl WaylandFallbackClipboard {
     }
 }
 
-impl Clipboard for WaylandFallbackClipboard {
+impl Clipboard for WlCopyClipboard {
     fn get_text(&self, _: &ClipboardOperationOptions) -> Option<String> {
         let timeout = std::time::Duration::from_millis(self.command_timeout);
         match Command::new("wl-paste")
@@ -129,7 +129,7 @@ impl Clipboard for WaylandFallbackClipboard {
     ) -> anyhow::Result<()> {
         if !image_path.exists() || !image_path.is_file() {
             return Err(
-                WaylandFallbackClipboardError::ImageNotFound(image_path.to_path_buf()).into(),
+                WlCopyClipboardError::ImageNotFound(image_path.to_path_buf()).into(),
             );
         }
 
@@ -159,7 +159,7 @@ impl Clipboard for WaylandFallbackClipboard {
     }
 }
 
-impl WaylandFallbackClipboard {
+impl WlCopyClipboard {
     fn invoke_command_with_timeout(
         &self,
         command: &mut Command,
@@ -204,7 +204,7 @@ impl WaylandFallbackClipboard {
 }
 
 #[derive(Error, Debug)]
-pub(crate) enum WaylandFallbackClipboardError {
+pub(crate) enum WlCopyClipboardError {
     #[error("wl-clipboard binaries are missing")]
     MissingWLClipboard(),
 
