@@ -140,6 +140,7 @@ impl super::engine::dispatch::executor::clipboard_injector::ClipboardParamsProvi
             disable_x11_fast_inject: active.disable_x11_fast_inject(),
             restore_clipboard: active.preserve_clipboard(),
             restore_clipboard_delay: active.restore_clipboard_delay(),
+            wayland_use_wlcopy_backend: active.wayland_use_wlcopy_backend(),
             x11_use_xclip_backend: active.x11_use_xclip_backend(),
             x11_use_xdotool_backend: active.x11_use_xdotool_backend(),
         }
@@ -150,6 +151,7 @@ impl ClipboardOperationOptionsProvider for ConfigManager<'_> {
     fn get_operation_options(&self) -> espanso_clipboard::ClipboardOperationOptions {
         let active = self.active();
         espanso_clipboard::ClipboardOperationOptions {
+            use_wlcopy_backend: active.wayland_use_wlcopy_backend(),
             use_xclip_backend: active.x11_use_xclip_backend(),
         }
     }

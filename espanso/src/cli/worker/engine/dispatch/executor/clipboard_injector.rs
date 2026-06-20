@@ -39,6 +39,7 @@ pub struct ClipboardParams {
     pub disable_x11_fast_inject: bool,
     pub restore_clipboard: bool,
     pub restore_clipboard_delay: usize,
+    pub wayland_use_wlcopy_backend: bool,
     pub x11_use_xclip_backend: bool,
     pub x11_use_xdotool_backend: bool,
 }
@@ -121,6 +122,7 @@ impl<'a> ClipboardInjectorAdapter<'a> {
     fn get_operation_options(&self) -> ClipboardOperationOptions {
         let params = self.params_provider.get();
         ClipboardOperationOptions {
+            use_wlcopy_backend: params.wayland_use_wlcopy_backend,
             use_xclip_backend: params.x11_use_xclip_backend,
         }
     }

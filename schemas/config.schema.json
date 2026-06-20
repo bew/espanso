@@ -232,6 +232,11 @@
       "default": 300,
       "description": "The number of milliseconds to wait before restoring the previous clipboard content after an expansion. This is needed as without this delay, sometimes the target application detects the previous clipboard content instead of the expansion content."
     },
+    "wayland_use_wlcopy_backend": {
+      "type": "boolean",
+      "default": "false",
+      "description": "If true, use the wl-copy/wl-paste commands to implement the clipboard instead of the built-in native module on Wayland. You'll need to install the wl-copy & wl-paste commands (usually from the wl-clipboard package)."
+    },
     "x11_use_xclip_backend": {
       "type": "boolean",
       "default": "false",

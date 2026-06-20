@@ -137,6 +137,9 @@ pub struct YAMLConfig {
     pub max_regex_buffer_size: Option<usize>,
 
     #[serde(default)]
+    pub wayland_use_wlcopy_backend: Option<bool>,
+
+    #[serde(default)]
     pub x11_use_xclip_backend: Option<bool>,
 
     #[serde(default)]
@@ -244,6 +247,7 @@ impl TryFrom<YAMLConfig> for ParsedConfig {
 
             max_regex_buffer_size: yaml_config.max_regex_buffer_size,
 
+            wayland_use_wlcopy_backend: yaml_config.wayland_use_wlcopy_backend,
             win32_exclude_orphan_events: yaml_config.win32_exclude_orphan_events,
             win32_keyboard_layout_cache_interval: yaml_config.win32_keyboard_layout_cache_interval,
             x11_use_xclip_backend: yaml_config.x11_use_xclip_backend,
@@ -312,6 +316,8 @@ mod tests {
     post_search_delay: 400
     emulate_alt_codes: true
     max_regex_buffer_size: 30
+
+    wayland_use_wlcopy_backend: true
     win32_exclude_orphan_events: false
     win32_keyboard_layout_cache_interval: 300
     x11_use_xclip_backend: true
@@ -374,6 +380,8 @@ mod tests {
                 max_form_width: Some(700),
                 max_form_height: Some(500),
                 post_search_delay: Some(400),
+
+                wayland_use_wlcopy_backend: Some(true),
                 win32_exclude_orphan_events: Some(false),
                 win32_keyboard_layout_cache_interval: Some(300),
                 x11_use_xclip_backend: Some(true),

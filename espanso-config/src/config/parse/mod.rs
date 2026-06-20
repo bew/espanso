@@ -50,6 +50,8 @@ pub struct ParsedConfig {
     pub post_search_delay: Option<usize>,
     pub max_regex_buffer_size: Option<usize>,
     pub emulate_alt_codes: Option<bool>,
+
+    pub wayland_use_wlcopy_backend: Option<bool>,
     pub win32_exclude_orphan_events: Option<bool>,
     pub win32_keyboard_layout_cache_interval: Option<i64>,
     pub x11_use_xclip_backend: Option<bool>,

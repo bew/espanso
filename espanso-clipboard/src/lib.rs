@@ -104,6 +104,7 @@ pub trait Clipboard {
 #[allow(dead_code)]
 #[derive(Default)]
 pub struct ClipboardOperationOptions {
+    pub use_wlcopy_backend: bool,
     pub use_xclip_backend: bool,
 }
 

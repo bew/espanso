@@ -356,6 +356,10 @@ impl Config for ResolvedConfig {
             .unwrap_or(2000)
     }
 
+    fn wayland_use_wlcopy_backend(&self) -> bool {
+        self.parsed.wayland_use_wlcopy_backend.unwrap_or(false)
+    }
+
     fn x11_use_xclip_backend(&self) -> bool {
         self.parsed.x11_use_xclip_backend.unwrap_or(false)
     }
@@ -451,6 +455,7 @@ impl ResolvedConfig {
             max_form_height,
             max_regex_buffer_size,
             post_search_delay,
+            wayland_use_wlcopy_backend,
             win32_exclude_orphan_events,
             win32_keyboard_layout_cache_interval,
             x11_use_xclip_backend,

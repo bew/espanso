@@ -186,6 +186,10 @@ pub trait Config: Send + Sync {
     // Because many users relied on this feature, we try to bring it back by emulating it.
     fn emulate_alt_codes(&self) -> bool;
 
+    // If true, use the `wl-copy`/`wl-paste` commands to implement the clipboard instead of
+    // the built-in native module on Wayland.
+    fn wayland_use_wlcopy_backend(&self) -> bool;
+
     // If true, use the `xclip` command to implement the clipboard instead of
     // the built-in native module on X11.
     fn x11_use_xclip_backend(&self) -> bool;
@@ -244,6 +248,7 @@ pub trait Config: Send + Sync {
 
         max_regex_buffer_size: {:?}
 
+        wayland_use_wlcopy_backend: {:?}
         x11_use_xclip_backend: {:?}
         x11_use_xdotool_backend: {:?}
         win32_exclude_orphan_events: {:?}
@@ -283,6 +288,7 @@ pub trait Config: Send + Sync {
 
           self.max_regex_buffer_size(),
 
+          self.wayland_use_wlcopy_backend(),
           self.x11_use_xclip_backend(),
           self.x11_use_xdotool_backend(),
           self.win32_exclude_orphan_events(),

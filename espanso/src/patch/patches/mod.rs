@@ -53,6 +53,7 @@ generate_patchable_config!(
   max_form_height -> usize,
   post_search_delay -> usize,
   emulate_alt_codes -> bool,
+  wayland_use_wlcopy_backend -> bool,
   win32_exclude_orphan_events -> bool,
   win32_keyboard_layout_cache_interval -> i64,
   x11_use_xclip_backend -> bool,

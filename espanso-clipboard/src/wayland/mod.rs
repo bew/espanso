@@ -17,34 +17,58 @@
  * along with espanso.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+pub(crate) mod native;
 pub(crate) mod wlcopy;
 
 use anyhow::Result;
-use log::info;
+use log::{info, warn};
 
-use crate::{Clipboard, ClipboardOperationOptions, ClipboardOptions};
+use crate::{Clipboard, ClipboardOperationOptions, ClipboardOptions, ClipboardSnapshot};
+use native::WaylandNativeClipboard;
 use wlcopy::WlCopyClipboard;
 
 pub struct WaylandClipboard {
+    native: Option<WaylandNativeClipboard>,
     wlcopy: WlCopyClipboard,
 }
 
 impl WaylandClipboard {
     pub fn new(options: ClipboardOptions) -> Result<Self> {
-        info!("using WlCopyClipboard backend");
+        let native = match WaylandNativeClipboard::new() {
+            Ok(backend) => {
+                info!("using WaylandNativeClipboard backend");
+                Some(backend)
+            }
+            Err(err) => {
+                warn!("native Wayland clipboard unavailable: {err}");
+                info!("using WlCopyClipboard backend");
+                None
+            }
+        };
         let wlcopy = WlCopyClipboard::new(options)?;
+        Ok(Self { native, wlcopy })
+    }
 
-        Ok(Self { wlcopy })
+    fn use_native(&self, options: &ClipboardOperationOptions) -> bool {
+        self.native.is_some() && !options.use_wlcopy_backend
     }
 }
 
 impl Clipboard for WaylandClipboard {
     fn get_text(&self, options: &ClipboardOperationOptions) -> Option<String> {
-        self.wlcopy.get_text(options)
+        if self.use_native(options) {
+            self.native.as_ref().unwrap().get_text(options)
+        } else {
+            self.wlcopy.get_text(options)
+        }
     }
 
     fn set_text(&self, text: &str, options: &ClipboardOperationOptions) -> Result<()> {
-        self.wlcopy.set_text(text, options)
+        if self.use_native(options) {
+            self.native.as_ref().unwrap().set_text(text, options)
+        } else {
+            self.wlcopy.set_text(text, options)
+        }
     }
 
     fn set_image(
@@ -52,7 +76,11 @@ impl Clipboard for WaylandClipboard {
         image_path: &std::path::Path,
         options: &ClipboardOperationOptions,
     ) -> Result<()> {
-        self.wlcopy.set_image(image_path, options)
+        if self.use_native(options) {
+            self.native.as_ref().unwrap().set_image(image_path, options)
+        } else {
+            self.wlcopy.set_image(image_path, options)
+        }
     }
 
     fn set_html(
@@ -61,6 +89,33 @@ impl Clipboard for WaylandClipboard {
         fallback_text: Option<&str>,
         options: &ClipboardOperationOptions,
     ) -> Result<()> {
-        self.wlcopy.set_html(html, fallback_text, options)
+        if self.use_native(options) {
+            self.native
+                .as_ref()
+                .unwrap()
+                .set_html(html, fallback_text, options)
+        } else {
+            self.wlcopy.set_html(html, fallback_text, options)
+        }
+    }
+
+    fn save_snapshot(&self, options: &ClipboardOperationOptions) -> Result<Option<ClipboardSnapshot>> {
+        if self.use_native(options) {
+            self.native.as_ref().unwrap().save_snapshot(options)
+        } else {
+            self.wlcopy.save_snapshot(options)
+        }
+    }
+
+    fn restore_snapshot(
+        &self,
+        snapshot: &ClipboardSnapshot,
+        options: &ClipboardOperationOptions,
+    ) -> Result<()> {
+        if self.use_native(options) {
+            self.native.as_ref().unwrap().restore_snapshot(snapshot, options)
+        } else {
+            self.wlcopy.restore_snapshot(snapshot, options)
+        }
     }
 }
