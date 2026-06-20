@@ -21,7 +21,7 @@ use std::io::Read;
 use std::path::Path;
 
 use anyhow::Result;
-use log::error;
+use log::{error, info};
 use thiserror::Error;
 use wl_clipboard_rs::copy::{
     self as wl_copy, ClipboardType as CopyClipboardType, MimeSource, MimeType as CopyMimeType,
@@ -63,6 +63,7 @@ impl Clipboard for WaylandNativeClipboard {
             Ok((mut reader, _mime)) => {
                 let mut text = String::new();
                 reader.read_to_string(&mut text).ok()?;
+                // FIXME: do I need this??
                 // wl-paste --no-newline behaviour: strip one trailing newline
                 if text.ends_with('\n') {
                     text.pop();
@@ -80,6 +81,7 @@ impl Clipboard for WaylandNativeClipboard {
     fn set_text(&self, text: &str, _: &ClipboardOperationOptions) -> Result<()> {
         let mut opts = Options::new();
         opts.serve_requests(ServeRequests::Unlimited);
+        info!("Setting clipboard to text: {text:#?}");
         opts.copy(
             Source::Bytes(text.as_bytes().to_vec().into_boxed_slice()),
             CopyMimeType::Text,
@@ -147,6 +149,7 @@ impl Clipboard for WaylandNativeClipboard {
             Err(err) => return Err(err.into()),
         };
 
+        info!("snapshot-save: {} MIME types", mimes.len());
         let mut entries = Vec::with_capacity(mimes.len());
         for mime in mimes {
             match paste::get_contents(
@@ -171,6 +174,15 @@ impl Clipboard for WaylandNativeClipboard {
             }
         }
 
+        log::debug!(
+            "snapshot-save: types: {}",
+            entries
+                .iter()
+                .map(|e| format!("{} ({}B)", e.mime, e.payload.len()))
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+
         Ok(Some(ClipboardSnapshot::MultiMime(entries)))
     }
 
@@ -187,9 +199,9 @@ impl Clipboard for WaylandNativeClipboard {
                     return Ok(());
                 }
 
-                log::info!("restore: {} MIME type(s)", entries.len());
+                log::info!("snapshot-restore: {} MIME type(s)", entries.len());
                 log::debug!(
-                    "restore types: {}",
+                    "snapshot-restore: types: {}",
                     entries
                         .iter()
                         .map(|e| format!("{} ({}B)", e.mime, e.payload.len()))
